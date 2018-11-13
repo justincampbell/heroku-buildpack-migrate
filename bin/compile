@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -e
+
+BUILD_DIR=$1
+CACHE_DIR=$2
+ENV_DIR=$3
+
+# Detect MIGRATE_VERSION env var
+if [ -f ${ENV_DIR}/MIGRATE_VERSION ]; then
+  export MIGRATE_VERSION="$(cat ${ENV_DIR}/MIGRATE_VERSION)"
+fi
+MIGRATE_VERSION=${MIGRATE_VERSION:-"v4.0.2"}
+
+BIN_DIR=${BUILD_DIR}/bin
+PROFILE_PATH=${BUILD_DIR}/.profile.d/migrate.sh
+CACHE_VERSION_DIR=${CACHE_DIR}/migrate-${MIGRATE_VERSION}
+
+echo "-----> Installing migrate/cli ${MIGRATE_VERSION}"
+
+# Download and install
+mkdir -p ${CACHE_VERSION_DIR}
+cd ${CACHE_VERSION_DIR}
+if [ ! -f migrate.* ]; then
+  curl \
+    --silent \
+    --location \
+    "https://github.com/golang-migrate/migrate/releases/download/${MIGRATE_VERSION}/migrate.linux-amd64.tar.gz" \
+    | tar xvz >> /dev/null
+fi
+mkdir -p ${BIN_DIR}
+cp migrate.* ${BIN_DIR}/migrate >> /dev/null
+
+# Set $PATH
+mkdir -p $(dirname ${PROFILE_PATH})
+cat << EOF > ${PROFILE_PATH}
+export PATH=$PATH:bin/
+EOF
